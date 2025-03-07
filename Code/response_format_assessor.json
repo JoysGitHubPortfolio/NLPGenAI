@@ -1,0 +1,33 @@
+{
+    "type": "json_schema",
+    "json_schema": {
+        "name": "sentiment_assessor",
+        "schema": {
+            "type": "object",
+            "required": [
+                "confidence",
+                "nuance",
+                "explainability",
+                "improvement"
+            ],
+            "properties": {
+                "confidence": {
+                    "type": "number",
+                    "description": "Value between 0 and 1 on confidence of answer"
+                },
+                "nuance": {
+                    "type": "number",
+                    "description": "Value between 0 and 1 on quality of analyzing mixed or varied emotions"
+                },
+                "explainability": {
+                    "type": "number",
+                    "description": "Value between 0 and 1 on how well the explanation captures the original text"
+                },
+                "improvement": {
+                    "type": "string",
+                    "description": "New dictionary based on the input which may or may not be the same"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,42 @@
+{
+    "type": "json_schema",
+    "json_schema": {
+        "name": "sentiment_analysis",
+        "schema": {
+            "type": "object",
+            "required": [
+                "positive",
+                "neutral",
+                "negative",
+                "dominant_emotion",
+                "justification"
+            ],
+            "properties": {
+                "positive": {
+                    "type": "number",
+                    "description": "Probability input is of positive sentiment"
+                },
+                "neutral": {
+                    "type": "number",
+                    "description": "Probability input is of neutral sentiment"
+                },
+                "negative": {
+                    "type": "number",
+                    "description": "Probability input is of negative sentiment"
+                },
+                "dominant_emotion": {
+                    "type": "string",
+                    "description": "Emotion that is most associated with the input"
+                },
+                "dominant_emotion_intensity": {
+                    "type": "number",
+                    "description": "Score between 0 and 1 for dominant emotion"
+                },
+                "justification": {
+                    "type": "string",
+                    "description": "Explanation of why the most probable outcome was chosen"
+                }
+            }
+        }
+    }
+}
