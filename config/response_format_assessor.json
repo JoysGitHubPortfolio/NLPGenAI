@@ -25,7 +25,7 @@
                 },
                 "improvement": {
                     "type": "string",
-                    "description": "New dictionary based on the input which may or may not be the same"
+                    "description": "New dictionary based on replicating the schema of input dictionary. Your values may or may not be the same but they keys must be identical."
                 }
             }
         }

@@ -1,0 +1,8 @@
+openai
+json
+re
+pandas
+numpy
+scipy
+sklearn
+matplotlib.pyplot

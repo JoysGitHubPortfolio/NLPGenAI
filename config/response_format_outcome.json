@@ -1,0 +1,28 @@
+{
+    "type": "json_schema",
+    "json_schema": {
+        "name": "sentiment_analysis",
+        "schema": {
+            "type": "object",
+            "required": [
+                "success",
+                "confidence",
+                "justification"
+            ],
+            "properties": {
+                "success": {
+                    "type": "boolean",
+                    "description": "True if customer outcome was achieved"
+                },
+                "confidence": {
+                    "type": "number",
+                    "description": "Probability output is accurate"
+                },
+                "justification": {
+                    "type": "string",
+                    "description": "Explanation of why the output was selected"
+                }
+            }
+        }
+    }
+}
