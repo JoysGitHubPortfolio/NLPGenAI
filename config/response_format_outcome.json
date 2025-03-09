@@ -10,9 +10,13 @@
                 "justification"
             ],
             "properties": {
-                "success": {
+                "outcome" : {
+                    "type" : "string",
+                    "description" : "Can strictly take values of 'issue resolved' or 'follow-up'."
+                },
+                "satisfaction": {
                     "type": "boolean",
-                    "description": "True if customer outcome was achieved"
+                    "description": "True if customer was satisfied with the agent"
                 },
                 "confidence": {
                     "type": "number",

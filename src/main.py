@@ -1,8 +1,20 @@
 from openai import OpenAI
 from agent import MakeMyAgent, json
 from smart_functions import SmartFunction
-from prompt import *
+from prompt import sentiment_agent_role, outcome_agent_role, assessor_agent_role
 import os
+
+import pandas as pd
+
+with open('../transcripts/transcript_0.txt') as f:
+    text = f.readlines()
+
+# Filter lines containing "Member"
+member_body = [line.strip().removeprefix('Member: ') 
+               for line in text if 'Member: ' in line]
+member_body = ' '.join(member_body)
+print(member_body)
+
 
 # Initialise client by passing key known to you
 API_KEY = os.getenv(input('Enter your environment variable: '))
@@ -20,9 +32,9 @@ with open("../config/response_format_outcome.json", "r") as f:
 
 # Define model parameters
 model_params = {
-    "temperature": 1,
+    "temperature": 0.5,
     "max_tokens": 2048,
-    "top_p": 1,
+    "top_p": 0.8,
     "frequency_penalty": 1,
     "presence_penalty": 1
 }
@@ -34,7 +46,7 @@ sentiment_agent = MakeMyAgent(
     model_params = model_params,
     role = sentiment_agent_role,
     response_format = sentiment_response_format,
-    user_input = user_input
+    user_input = member_body
 )
 sentiment_output = sentiment_agent.run()
 json_sentiment_output = json.loads(sentiment_output)
@@ -66,7 +78,7 @@ outcome_agent = MakeMyAgent(
     model_params = model_params,
     role = outcome_agent_role,
     response_format = outcome_response_format,
-    user_input = user_input
+    user_input = member_body
 )
 outcome_output = outcome_agent.run()
 json_outcome_output = json.loads(outcome_output)
