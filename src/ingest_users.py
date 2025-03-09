@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 
+# For regex analysis later on
 def find_attribute(member_body, agent_body, string):
     agent_search = re.search(string, member_body)
     member_search = re.search(string, agent_body)
@@ -12,10 +13,15 @@ def find_attribute(member_body, agent_body, string):
         found_attribute = None
     return found_attribute
 
-verbose = False
+def find_agent(text):
+    match = re.match(r'([^:]+):', text)
+    return match.group(1) if match else None
+
+# Prepare new data
 transcript_ids = []
 member_ids = []
 claim_ids = []
+agent_types = []
 agent_bodies = []
 member_bodies = []
 for i in range(0, 200):
@@ -28,8 +34,10 @@ for i in range(0, 200):
                       if 'Support:' in line
                       or 'Agent:' in line]
         agent_body = ' '.join(agent_body)
+        agent_type = find_agent(agent_body)
+        clean_agent_body = agent_body.replace(agent_type + ": ", "")
         
-        member_body = [line.strip().removeprefix('Member: Hi, ').lower() 
+        member_body = [line.strip().removeprefix('Member: ').removeprefix('Hi, ').lower() 
                     for line in text if 'Member:' in line]
         member_body = ' '.join(member_body)
 
@@ -41,20 +49,26 @@ for i in range(0, 200):
         transcript_ids.append(i)
         member_ids.append(memeber_id)
         claim_ids.append(claim_id)
-        agent_bodies.append(agent_body)
+        agent_types.append(agent_type)
+        agent_bodies.append(clean_agent_body)
         member_bodies.append(member_body)
     except:
         print('Error at: ', i)
 
-
+# Create a DataFrame for new data
 df = pd.DataFrame({
     'transcript_id': transcript_ids,
     'member_id': member_ids,
     'claim_id': claim_ids,
+    'agent_type': agent_types,
     'agent_body': agent_bodies,
-    'member_body': member_bodies
+    'member_body': member_bodies,
+    'ground_positive': [None] * len(transcript_ids),
+    'ground_neutral': [None] * len(transcript_ids),
+    'ground_negative': [None] * len(transcript_ids)
 })
 
+# Save to CSV
 output_file = '../output/transcripts_data.csv'
 df.to_csv(output_file, index=False)
-print(df.head())  # Print the first 5 rows for a quick preview
+print(df.head())
