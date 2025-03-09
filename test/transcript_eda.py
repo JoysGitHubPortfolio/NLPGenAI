@@ -86,7 +86,7 @@ for j in range(plot_limit):
     plt.figure(figsize=(10, 5))
     plt.imshow(wc, interpolation='bilinear')
     plt.axis('off')  # Remove axes
-    plt.title(f'Member {i}')
+    plt.title(f'Member {rand_int}')
     plt.savefig(output_path, bbox_inches='tight')
     plt.close()
 
