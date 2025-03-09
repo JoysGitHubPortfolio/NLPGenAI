@@ -9,6 +9,7 @@ from wordcloud import WordCloud
 from collections import Counter
 from ssl_verification import *
 
+
 def check_nltk(resource):
     try:
         nltk.data.find(resource)
@@ -20,20 +21,24 @@ check_nltk('tokenizers/punkt')
 check_nltk('vader_lexicon')  # Check for VADER lexicon
 
 def make_scatter_plot(counts, sentiment_scores, main_output_path):
-    plt.figure(figsize=(25, 25))
-    plt.scatter(counts, sentiment_scores, color='skyblue', edgecolors='black', s=100)
+    plt.figure(figsize=(12, 12))
+    plt.scatter(counts, sentiment_scores,
+                color=['orange' if s==0 
+                else 'green' if s>0 
+                else 'red'
+                for s in sentiment_scores],
+                edgecolors='black', s=100)
 
     # Adding words as labels on the scatter plot
     for i, word in enumerate(words):
         plt.text(counts[i], sentiment_scores[i], word,
                 fontsize=10, ha='left', va='center', rotation=45)
-
-    # Adding labels and title
     plt.xlabel('Word Frequency')
     plt.ylabel('Sentiment Score')
-    plt.title('Top 50 Words Across All Members: Frequency vs. Sentiment Scores (log-log scale)')
+    plt.title('Top 50 Words Across All Members: Frequency vs. Sentiment Scores')
     plt.savefig(main_output_path, bbox_inches='tight')
     plt.close()
+
 
 verbose = input('Do you want to see Member body? (1 = Yes, else No): ')
 try:
@@ -51,9 +56,9 @@ try:
 except:
     plot_graph = False
 
+
 # Initialize SentimentIntensityAnalyzer
 sia = SentimentIntensityAnalyzer()
-
 stop_words = stopwords.words('english')
 custom_stopwords = [
     "hi", "member", "number", "bye",
@@ -62,6 +67,7 @@ custom_stopwords = [
     "mem123456"
 ]
 stop_words += custom_stopwords
+
 
 # Collect word frequencies for each member
 member_dictionary = {}
@@ -122,17 +128,16 @@ if plot_graph:
         plt.savefig(output_path, bbox_inches='tight')
         plt.close()
 
+
+# Bar chart of the top N words across all members with sentiment analysis
 all_word_counts = Counter(all_words)
 top_n_words = all_word_counts.most_common(50)  # Adjust N as needed
 words, counts = zip(*top_n_words)
-
-# Get sentiment scores for the words
 sentiment_scores = []
 for word in words:
-    sentiment_score = sia.polarity_scores(word)['compound']  # 'compound' gives overall sentiment score
+    sentiment_score = sia.polarity_scores(word)['compound']  # 'compound' overall sentiment
     sentiment_scores.append(sentiment_score)
 
-# Bar chart of the top N words across all members with sentiment analysis
 plt.figure(figsize=(8, 8))
 bars = plt.barh(words, counts, color=['orange' if s==0 
                                       else 'green' if s>0 
@@ -141,8 +146,6 @@ bars = plt.barh(words, counts, color=['orange' if s==0
 for i, bar in enumerate(bars):
     plt.text(bar.get_width() + 1, bar.get_y() + bar.get_height() / 2, f'{sentiment_scores[i]:.2f}', 
              va='center', ha='left', fontsize=10, color='black')
-
-# Adding the labels and title
 main_output_path = "../output/overall_word_distribution_with_sentiment.png"
 plt.xlabel('Frequency')
 plt.ylabel('Words')
@@ -150,6 +153,8 @@ plt.title('Top 50 Words Across All Members with Sentiment Scores')
 plt.savefig(main_output_path, bbox_inches='tight')
 plt.close()
 
+
+# scatter plot and log scale
 main_output_path = "../output/overall_word_distribution_scatter_with_sentiment.png"
 make_scatter_plot(counts=counts, 
                   sentiment_scores=sentiment_scores, 
