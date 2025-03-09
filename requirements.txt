@@ -1,6 +1,8 @@
 openai
+nltk
 pandas
 numpy
 scipy
 scikit-learn
 matplotlib
+wordcloud
