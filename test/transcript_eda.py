@@ -1,18 +1,35 @@
-import ssl
-ssl._create_default_https_context = ssl._create_unverified_context
+import matplotlib.pyplot as plt
 import nltk
+import random
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
-import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 from collections import Counter
+from ssl_verification import *
 
-nltk.download('stopwords')
-nltk.download('punkt')
+def check_nltk(resource):
+    try:
+        nltk.data.find(resource)
+    except LookupError:
+        nltk.download(resource.split('/')[-1])
+
+check_nltk('corpora/stopwords')
+check_nltk('tokenizers/punkt')
+
+verbose = input('Do you want to see Member body? (1 = Yes, else No): ')
+try:
+    verbose = int(verbose)
+    if verbose == 1:
+        verbose= True
+except:
+    verbose = False
 
 stop_words = stopwords.words('english')
 custom_stopwords = [
-    "hi", "member", "number", "bye", "...", ".", ",", "?", "!", "*", "$", "(", ")", "'s", "'m", "'ve", "'d", "id", "'ll", "n't", "mem123456"
+    "hi", "member", "number", "bye",
+    "...", ".", ",", "?", "!", "*", "$", "(", ")", 
+    "'s", "'m", "'ve", "'d", "id", "'ll", "n't", 
+    "mem123456"
 ]
 stop_words += custom_stopwords
 
@@ -28,6 +45,9 @@ for i in range(0, 200):
         member_body = [line.strip().removeprefix('Member: ').lower() 
                     for line in text if 'Member: ' in line]
         member_body = ' '.join(member_body)
+        if verbose:
+            print(i, member_body)
+            print()
 
         tokens = word_tokenize(member_body)
         filtered_words = [token for token in tokens if token not in stop_words]
@@ -46,26 +66,40 @@ for i in range(0, 200):
         print(f"Error at transcript_{i}: {e}")
         continue
 
+
 # Visualize word clouds for each member
-limit = 5
-for i, word_distribution in member_dictionary.items():
-    if i == limit:
+plot_limit = 5
+member_top_n = 10
+for j in range(plot_limit):
+    rand_int = random.randint(0, len(member_dictionary.keys()))
+    word_distribution = member_dictionary[rand_int]
+    member_word_counts = Counter(word_distribution)
+    top_n_member_words = member_word_counts.most_common(member_top_n)    
+    top_n_word_distribution = dict(top_n_member_words)
+
+    if j == plot_limit:
         break
-    wc = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(word_distribution)
+    wc = WordCloud(width=800,
+                   height=400,
+                   background_color='white').generate_from_frequencies(top_n_word_distribution)
+    output_path = f"../output/member_{rand_int}_wordcloud.png"
     plt.figure(figsize=(10, 5))
     plt.imshow(wc, interpolation='bilinear')
-    plt.axis('off')
-    plt.title(f'Member {i} - Word Cloud')
-    plt.show()
+    plt.axis('off')  # Remove axes
+    plt.title(f'Member {i}')
+    plt.savefig(output_path, bbox_inches='tight')
+    plt.close()
 
-all_word_counts = Counter(all_words)
-top_n_words = all_word_counts.most_common(50)  # Change to any number N you want
-words, counts = zip(*top_n_words)
 
 # Bar chart of the top N words across all members
-plt.figure(figsize=(12, 6))
+all_word_counts = Counter(all_words)
+top_n_words = all_word_counts.most_common(50)  
+words, counts = zip(*top_n_words)
+main_output_path = "../output/overall_word_distribution.png"
+plt.figure(figsize=(12, 10))
 plt.barh(words, counts, color='skyblue')
 plt.xlabel('Words')
 plt.ylabel('Frequency')
 plt.title('Top 10 Words Across All Members')
-plt.show()
+plt.savefig(main_output_path, bbox_inches='tight')
+plt.close()
