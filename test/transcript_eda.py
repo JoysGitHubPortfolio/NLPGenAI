@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
-import nltk
+import numpy as np
 import random
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from wordcloud import WordCloud
@@ -15,6 +17,23 @@ def check_nltk(resource):
 
 check_nltk('corpora/stopwords')
 check_nltk('tokenizers/punkt')
+check_nltk('vader_lexicon')  # Check for VADER lexicon
+
+def make_scatter_plot(counts, sentiment_scores, main_output_path):
+    plt.figure(figsize=(25, 25))
+    plt.scatter(counts, sentiment_scores, color='skyblue', edgecolors='black', s=100)
+
+    # Adding words as labels on the scatter plot
+    for i, word in enumerate(words):
+        plt.text(counts[i], sentiment_scores[i], word,
+                fontsize=10, ha='left', va='center', rotation=45)
+
+    # Adding labels and title
+    plt.xlabel('Word Frequency')
+    plt.ylabel('Sentiment Score')
+    plt.title('Top 50 Words Across All Members: Frequency vs. Sentiment Scores (log-log scale)')
+    plt.savefig(main_output_path, bbox_inches='tight')
+    plt.close()
 
 verbose = input('Do you want to see Member body? (1 = Yes, else No): ')
 try:
@@ -23,6 +42,17 @@ try:
         verbose= True
 except:
     verbose = False
+
+plot_graph = input('Do you want to see Member word cloud? (1 = Yes, else No): ')
+try:
+    plot_graph = int(plot_graph)
+    if plot_graph == 1:
+        plot_graph= True
+except:
+    plot_graph = False
+
+# Initialize SentimentIntensityAnalyzer
+sia = SentimentIntensityAnalyzer()
 
 stop_words = stopwords.words('english')
 custom_stopwords = [
@@ -50,7 +80,8 @@ for i in range(0, 200):
             print()
 
         tokens = word_tokenize(member_body)
-        filtered_words = [token for token in tokens if token not in stop_words]
+        filtered_words = [token for token in tokens
+                          if token not in stop_words and 'mem' not in token]
 
         member_body_distribution = {}
         for word in filtered_words:
@@ -68,38 +99,63 @@ for i in range(0, 200):
 
 
 # Visualize word clouds for each member
-plot_limit = 5
-member_top_n = 10
-for j in range(plot_limit):
-    rand_int = random.randint(0, len(member_dictionary.keys()))
-    word_distribution = member_dictionary[rand_int]
-    member_word_counts = Counter(word_distribution)
-    top_n_member_words = member_word_counts.most_common(member_top_n)    
-    top_n_word_distribution = dict(top_n_member_words)
+if plot_graph:
+    plot_limit = 5
+    member_top_n = 10
+    for j in range(plot_limit):
+        rand_int = random.randint(0, len(member_dictionary.keys()))
+        word_distribution = member_dictionary[rand_int]
+        member_word_counts = Counter(word_distribution)
+        top_n_member_words = member_word_counts.most_common(member_top_n)    
+        top_n_word_distribution = dict(top_n_member_words)
 
-    if j == plot_limit:
-        break
-    wc = WordCloud(width=800,
-                   height=400,
-                   background_color='white').generate_from_frequencies(top_n_word_distribution)
-    output_path = f"../output/member_{rand_int}_wordcloud.png"
-    plt.figure(figsize=(10, 5))
-    plt.imshow(wc, interpolation='bilinear')
-    plt.axis('off')  # Remove axes
-    plt.title(f'Member {rand_int}')
-    plt.savefig(output_path, bbox_inches='tight')
-    plt.close()
+        if j == plot_limit:
+            break
+        wc = WordCloud(width=800,
+                    height=400,
+                    background_color='white').generate_from_frequencies(top_n_word_distribution)
+        output_path = f"../output/member_{rand_int}_wordcloud.png"
+        plt.figure(figsize=(10, 5))
+        plt.imshow(wc, interpolation='bilinear')
+        plt.axis('off')  # Remove axes
+        plt.title(f'Member {rand_int}')
+        plt.savefig(output_path, bbox_inches='tight')
+        plt.close()
 
-
-# Bar chart of the top N words across all members
 all_word_counts = Counter(all_words)
-top_n_words = all_word_counts.most_common(50)  
+top_n_words = all_word_counts.most_common(50)  # Adjust N as needed
 words, counts = zip(*top_n_words)
-main_output_path = "../output/overall_word_distribution.png"
-plt.figure(figsize=(12, 10))
-plt.barh(words, counts, color='skyblue')
-plt.xlabel('Words')
-plt.ylabel('Frequency')
-plt.title('Top 10 Words Across All Members')
+
+# Get sentiment scores for the words
+sentiment_scores = []
+for word in words:
+    sentiment_score = sia.polarity_scores(word)['compound']  # 'compound' gives overall sentiment score
+    sentiment_scores.append(sentiment_score)
+
+# Bar chart of the top N words across all members with sentiment analysis
+plt.figure(figsize=(8, 8))
+bars = plt.barh(words, counts, color=['orange' if s==0 
+                                      else 'green' if s>0 
+                                      else 'red'
+                                      for s in sentiment_scores])
+for i, bar in enumerate(bars):
+    plt.text(bar.get_width() + 1, bar.get_y() + bar.get_height() / 2, f'{sentiment_scores[i]:.2f}', 
+             va='center', ha='left', fontsize=10, color='black')
+
+# Adding the labels and title
+main_output_path = "../output/overall_word_distribution_with_sentiment.png"
+plt.xlabel('Frequency')
+plt.ylabel('Words')
+plt.title('Top 50 Words Across All Members with Sentiment Scores')
 plt.savefig(main_output_path, bbox_inches='tight')
 plt.close()
+
+main_output_path = "../output/overall_word_distribution_scatter_with_sentiment.png"
+make_scatter_plot(counts=counts, 
+                  sentiment_scores=sentiment_scores, 
+                  main_output_path=main_output_path)
+
+main_output_path_log = "../output/overall_word_distribution_scatter_with_sentiment_log.png"
+make_scatter_plot(counts=np.log10([1 + c for c in counts]), 
+                  sentiment_scores=np.log10([1 + s for s in sentiment_scores]), 
+                  main_output_path=main_output_path_log)
