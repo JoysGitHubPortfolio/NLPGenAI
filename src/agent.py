@@ -1,5 +1,3 @@
-import json
-
 class MakeMyAgent:
     def __init__(self, model, client, model_params, role, response_format, user_input):
         self.model = model 

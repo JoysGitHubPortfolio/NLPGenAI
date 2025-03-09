@@ -1,10 +1,8 @@
 from openai import OpenAI
-from agent import MakeMyAgent, json
+from agent import MakeMyAgent
 from smart_functions import SmartFunction
 from prompt import sentiment_agent_role, outcome_agent_role, assessor_agent_role
-import os
-
-import pandas as pd
+import os, json
 
 with open('../transcripts/transcript_0.txt') as f:
     text = f.readlines()
