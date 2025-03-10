@@ -4,8 +4,9 @@ from smart_functions import SmartFunction
 import os, json, pandas as pd
 
 # Initialise client by passing key known to you & Initialise SmartFunction
-API_KEY = os.getenv(input('Enter your environment variable: '))
-client = OpenAI(api_key=API_KEY) 
+if __name__ == "__main__":
+    API_KEY = os.getenv(input('Enter your environment variable: '))
+    client = OpenAI(api_key=API_KEY) 
 sf = SmartFunction()
 
 # Choose the parameters where the SSE is lowest & set globally
@@ -97,3 +98,12 @@ def pipe(member_body,
     outcome_improvement = sf.is_improvement_required(json_outcome_output, json_outcome_assessor_output)
     print(outcome_improvement)
     print()
+
+    return {
+        'json_sentiment_output': json_sentiment_output,
+        'json_assessor_output': json_assessor_output,
+        'sentiment_improvement': sentiment_improvement,
+        'json_outcome_output': json_outcome_output,
+        'json_outcome_assessor_output': json_outcome_assessor_output,
+        'outcome_improvement': outcome_improvement
+    }
