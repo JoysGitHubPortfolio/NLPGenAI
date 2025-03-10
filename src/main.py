@@ -14,11 +14,9 @@ member_body = ' '.join(member_body)
 print(member_body)
 
 
-# Initialise client by passing key known to you
+# Initialise client by passing key known to you & Initialise SmartFunction
 API_KEY = os.getenv(input('Enter your environment variable: '))
 client = OpenAI(api_key=API_KEY) 
-
-# Initialise SmartFunction
 sf = SmartFunction()
 
 with open("../config/response_format_assessor.json", "r") as f:
