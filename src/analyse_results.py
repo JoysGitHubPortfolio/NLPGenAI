@@ -1,7 +1,7 @@
 import ast
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+from smart_plots import SmartPlotter
 
 # Read
 df = pd.read_csv('../output/overall_model_output.csv')
@@ -25,8 +25,8 @@ def improvement_pie(df, field):
     plt.axis('equal')
     plt.show()
 
-# improvement_pie(df=df, field='sentiment_improvement')
-# improvement_pie(df=df, field='outcome_improvement')
+improvement_pie(df=df, field='sentiment_improvement')
+improvement_pie(df=df, field='outcome_improvement')
 
 positive_sentiments = []
 neutral_sentiments = []
@@ -59,12 +59,10 @@ emotions_count.pop('grateful', None)
 emotions_count.pop('gratefulness', None)
 emotions_count.pop('gratitude', None)
 emotions_count['gratitude'] = gratitude_count
+emotions_count = dict(sorted(emotions_count.items(),
+                             key=lambda item: item[1], reverse=True))
 
-# Sort desc
-emotions_count = dict(sorted(emotions_count.items(), key=lambda item: item[1], reverse=True))
-print(emotions_count)
-
-# Plotting the bar chart
-plt.barh(list(emotions_count.keys()), list(emotions_count.values()))
-plt.xticks(rotation=90)
-plt.show()
+# Plotting the scatter chart
+smart_plotter = SmartPlotter(emotions_count)
+smart_plotter.make_scatter_plot()
+smart_plotter.make_word_map()
