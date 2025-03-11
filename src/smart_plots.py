@@ -2,6 +2,8 @@ from wordcloud import WordCloud
 from nltk.sentiment import SentimentIntensityAnalyzer
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
 import ast
 
 class SmartPlotter:
@@ -10,10 +12,12 @@ class SmartPlotter:
         self.sia = SentimentIntensityAnalyzer()
         self.word_dictionary = self._extract_word_frequencies()
         self._process_data()
+        self._extract_outcome_and_satisfaction()
 
     def _extract_word_frequencies(self):
         word_dict = {}
         dominant_emotions = []
+        effective_sentiments = []
         
         for i, string in enumerate(self.df['json_sentiment_output']):
             dictionary = ast.literal_eval(string)  # Convert string to dictionary
@@ -21,11 +25,16 @@ class SmartPlotter:
             neutral = dictionary['neutral']
             negative = dictionary['negative']
             dominant_emotion = dictionary['dominant_emotion']
-            
+            dominant_emotion_intensity = dictionary['dominant_emotion_intensity']
+
+            effective_sentiment = ((positive * 1) + (neutral * 0) + (negative * -1)) * dominant_emotion_intensity
+            effective_sentiments.append(effective_sentiment)
+
             dominant_emotions.append(dominant_emotion)
             word_dict[dominant_emotion] = word_dict.get(dominant_emotion, 0) + 1
         
         self.dominant_emotions = dominant_emotions
+        self.effective_sentiments = effective_sentiments  # Store effective sentiments
         return word_dict
 
     def _process_data(self):
@@ -110,4 +119,88 @@ class SmartPlotter:
         plt.legend()
         plt.show()
 
+    def plot_effective_sentiment_boxplot(self):
+        positive_sentiments = []
+        neutral_sentiments = []
+        negative_sentiments = []
 
+        for i, string in enumerate(self.df['json_sentiment_output']):
+            dictionary = ast.literal_eval(string)
+            positive_sentiments.append(dictionary['positive'])
+            neutral_sentiments.append(dictionary['neutral'])
+            negative_sentiments.append(dictionary['negative'])
+
+        # Creating subplots
+        fig, ax = plt.subplots(1, 2, figsize=(15, 6))
+
+        # Plot effective sentiment
+        ax[0].boxplot(self.effective_sentiments)
+        ax[0].set_ylabel("Effective Sentiment Score")
+        ax[0].set_title("Distribution of Effective Sentiments")
+        ax[0].grid(axis='y', linestyle='--', alpha=0.7)
+
+        # Plot positive, neutral, negative sentiment probabilities
+        ax[1].boxplot([positive_sentiments, neutral_sentiments, negative_sentiments], labels=['Positive', 'Neutral', 'Negative'])
+        ax[1].set_ylabel("Sentiment Probability")
+        ax[1].set_title("Distribution of Sentiment Probabilities")
+        ax[1].grid(axis='y', linestyle='--', alpha=0.7)
+
+        plt.tight_layout()
+        plt.show()
+
+    def plot_sentiment_barchart(self):
+        # Initialize counts for positive, neutral, and negative sentiments
+        positive_count = 0
+        neutral_count = 0
+        negative_count = 0
+
+        for i, string in enumerate(self.df['json_sentiment_output']):
+            dictionary = ast.literal_eval(string)
+            positive_count += dictionary['positive']
+            neutral_count += dictionary['neutral']
+            negative_count += dictionary['negative']
+
+        # Define counts and labels
+        counts = [positive_count, neutral_count, negative_count]
+        labels = ['Positive', 'Neutral', 'Negative']
+
+        # Assign color based on RAG scheme
+        colors = ['green' if count == positive_count else 'orange' if count == neutral_count else 'red' for count in counts]
+
+        # Create bar chart
+        plt.figure(figsize=(8, 6))
+        plt.bar(labels, counts, color=colors)
+        plt.title('Sentiment Distribution (RAG Color Scheme)')
+        plt.ylabel('Sentiment Count')
+        plt.show()
+
+    def _extract_outcome_and_satisfaction(self):
+            outcomes = []
+            satisfactions = []
+            
+            for string in self.df['json_outcome_output']:
+                dictionary = ast.literal_eval(string)  # Convert string to dictionary
+                outcome = dictionary.get('outcome', '')
+                satisfaction = dictionary.get('satisfaction', False)
+                
+                outcomes.append(outcome)
+                satisfactions.append(satisfaction)
+            
+            return outcomes, satisfactions
+        
+    def plot_confusion_matrix(self):
+        # Extract 'outcome' and 'satisfaction' data
+        outcomes, satisfactions = self._extract_outcome_and_satisfaction()
+        df_matrix = pd.DataFrame({
+            'Outcome': outcomes,
+            'Satisfaction': satisfactions
+        })
+        confusion_matrix = pd.crosstab(df_matrix['Outcome'], df_matrix['Satisfaction'], 
+                                    rownames=['Outcome'], colnames=['Satisfaction'])
+
+        # Plot the confusion matrix using seaborn heatmap
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(confusion_matrix, annot=True, cmap='Blues', fmt='d', cbar=False, 
+                    linewidths=0.5, linecolor='black')
+        plt.title('Confusion Matrix: Outcome vs. Satisfaction')
+        plt.show()

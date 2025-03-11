@@ -1,6 +1,5 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-from smart_plots import SmartPlotter
+from smart_plots import SmartPlotter, ast
 
 # Read
 df = pd.read_csv('../output/overall_model_output.csv')
@@ -12,3 +11,6 @@ plotter.improvement_pie('outcome_improvement')
 plotter.plot_sentiment_histogram()
 plotter.make_scatter_plot()
 plotter.make_word_map()
+plotter.plot_effective_sentiment_boxplot()
+plotter.plot_sentiment_barchart()
+plotter.plot_confusion_matrix()
