@@ -1,12 +1,14 @@
 from wordcloud import WordCloud
 from nltk.sentiment import SentimentIntensityAnalyzer
 from sklearn.naive_bayes import GaussianNB
+from sklearn.model_selection import cross_val_score
 from sklearn.metrics import accuracy_score, confusion_matrix
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import ast
+
 
 class SmartPlotter:
     def __init__(self, df):
@@ -242,6 +244,9 @@ class SmartAnalytics():
         model.fit(features, labels)        
         predictions = model.predict(features)
         accuracy = accuracy_score(labels, predictions)
+        scores = cross_val_score(model, features, labels, cv=5)
+        print(f"Cross-validation scores: {scores}")
+        print(f"Mean CV accuracy: {scores.mean()}")
         
         # Get probabilities for each class (0 and 1)
         probs = model.predict_proba(features)  # This returns a 2D array with probabilities for both classes

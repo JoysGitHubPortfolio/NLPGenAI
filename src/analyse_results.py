@@ -6,15 +6,16 @@ from smart_features import SmartFeatures
 df = pd.read_csv('../output/overall_model_output.csv')
 print(df)
 
-# plotter = SmartPlotter(df)
-# plotter.improvement_pie('sentiment_improvement')
-# plotter.improvement_pie('outcome_improvement')
-# plotter.plot_sentiment_histogram()
-# plotter.make_scatter_plot()
-# plotter.make_word_map()
-# plotter.plot_effective_sentiment_boxplot()
-# plotter.plot_sentiment_barchart()
-# plotter.plot_confusion_matrix()
+# Get Descriptive Analytics
+plotter = SmartPlotter(df)
+plotter.improvement_pie('sentiment_improvement')
+plotter.improvement_pie('outcome_improvement')
+plotter.plot_sentiment_histogram()
+plotter.make_scatter_plot()
+plotter.make_word_map()
+plotter.plot_effective_sentiment_boxplot()
+plotter.plot_sentiment_barchart()
+plotter.plot_confusion_matrix()
 
 # Bayesian Inference to predict Satisfaction
 data = [ast.literal_eval(string) for string in df['json_outcome_output'].values]

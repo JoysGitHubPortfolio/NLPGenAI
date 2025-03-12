@@ -1,4 +1,6 @@
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
@@ -89,10 +91,13 @@ class SmartFeatures:
             'neutral': self.sentiment_probs['neutral'],
             'negative': self.sentiment_probs['negative']
         })
-        # Train model and predict satisfaction probabilities
-        model = LogisticRegression()
-        model.fit(X, self.satisfactions)
-        prob_satisfaction = model.predict_proba(X)[:, 1]
+        # Train a logistic regression model with scaling
+        pipeline = make_pipeline(
+            StandardScaler(),  # Standardize the features
+            LogisticRegression()  # Logistic Regression model
+        )
+        pipeline.fit(X, self.satisfactions)
+        prob_satisfaction = pipeline.predict_proba(X)[:, 1]
 
         # Plot the probabilities of satisfaction based on sentiment probabilities
         plt.figure(figsize=(8, 6))
@@ -104,7 +109,7 @@ class SmartFeatures:
 
         # Find the threshold that maximises the accuracy
         thresholds = [np.round(0.1 * i, 2) for i in range(1, 11)]  # Create thresholds from 0.1 to 1.0
-        fig, axes = plt.subplots(2, 5, figsize=(20, 10))  # 2 rows, 5 columns
+        fig, axes = plt.subplots(2, 5, figsize=(14, 8))  # 2 rows, 5 columns
         axes = axes.ravel()  # Flatten the axes for easy indexing
         for idx, threshold in enumerate(thresholds):
             thresholded_predictions = (prob_satisfaction >= threshold).astype(int)
