@@ -1,8 +1,11 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 import ast
+import seaborn as sns
 
 class SmartFeatures:
     def __init__(self, df):
@@ -53,6 +56,10 @@ class SmartFeatures:
         model = LogisticRegression()
         model.fit(X_train, y_train)
 
+        # Get predictions and calculate accuracy
+        predictions = model.predict(X_test)
+        accuracy = accuracy_score(y_test, predictions)
+
         # Plot the coefficients (impact of each sentiment term)
         feature_names = ['Positive', 'Neutral', 'Negative']
         coefficients = model.coef_[0]
@@ -64,6 +71,17 @@ class SmartFeatures:
         plt.xlabel('Sentiment Term')
         plt.show()
 
+        # Confusion Matrix
+        cm = confusion_matrix(y_test, predictions)
+        plt.figure(figsize=(6, 6))
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['Not Satisfied', 'Satisfied'], yticklabels=['Not Satisfied', 'Satisfied'])
+        plt.title("Confusion Matrix")
+        plt.xlabel("Predicted")
+        plt.ylabel("Actual")
+        plt.show()
+
+        return accuracy
+
     def plot_satisfaction_probabilities(self):
         # Prepare data for prediction
         X = pd.DataFrame({
@@ -71,8 +89,7 @@ class SmartFeatures:
             'neutral': self.sentiment_probs['neutral'],
             'negative': self.sentiment_probs['negative']
         })
-        
-        # Predict satisfaction probabilities
+        # Train model and predict satisfaction probabilities
         model = LogisticRegression()
         model.fit(X, self.satisfactions)
         prob_satisfaction = model.predict_proba(X)[:, 1]
@@ -84,3 +101,23 @@ class SmartFeatures:
         plt.xlabel("Sample Index")
         plt.ylabel("Probability of Satisfaction")
         plt.show()
+
+        # Find the threshold that maximises the accuracy
+        thresholds = [np.round(0.1 * i, 2) for i in range(1, 11)]  # Create thresholds from 0.1 to 1.0
+        fig, axes = plt.subplots(2, 5, figsize=(20, 10))  # 2 rows, 5 columns
+        axes = axes.ravel()  # Flatten the axes for easy indexing
+        for idx, threshold in enumerate(thresholds):
+            thresholded_predictions = (prob_satisfaction >= threshold).astype(int)
+            cm = confusion_matrix(self.satisfactions, thresholded_predictions)            
+            accuracy = accuracy_score(self.satisfactions, thresholded_predictions)
+
+            # Plot the confusion matrix in the subplot
+            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['Not Satisfied', 'Satisfied'], 
+                        yticklabels=['Not Satisfied', 'Satisfied'], ax=axes[idx])            
+            axes[idx].set_title(f"Threshold {threshold}, Accuracy: {accuracy:.3f}")
+            axes[idx].set_xlabel("Predicted")
+            axes[idx].set_ylabel("Actual")
+        plt.tight_layout()
+        plt.show()
+
+        return prob_satisfaction

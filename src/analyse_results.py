@@ -24,6 +24,7 @@ print(f"Accuracy: {accuracy}")
 print(f"Predictions: {predictions}")
 
 # Logistic Regression to predict Satisfaction
-features = SmartFeatures(df)
-features.plot_sentiment_impact_on_satisfaction()
-features.plot_satisfaction_probabilities()
+smart_features = SmartFeatures(df)
+accuracy = smart_features.plot_sentiment_impact_on_satisfaction()
+smart_features.plot_satisfaction_probabilities()
+print(f"Accuracy of sentiment impact model: {accuracy}")
