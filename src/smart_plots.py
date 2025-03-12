@@ -1,8 +1,5 @@
 from wordcloud import WordCloud
 from nltk.sentiment import SentimentIntensityAnalyzer
-from sklearn.naive_bayes import GaussianNB
-from sklearn.model_selection import cross_val_score
-from sklearn.metrics import accuracy_score, confusion_matrix
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -208,73 +205,3 @@ class SmartPlotter:
                     linewidths=0.5, linecolor='black')
         plt.title('Confusion Matrix: Outcome vs. Satisfaction')
         plt.show()
-
-
-
-class SmartAnalytics():
-    def __init__(self, data):
-        self.data = data
-    
-    def extract_features(self, json_data):
-        try:
-            # Check if 'satisfaction' is a boolean
-            satisfaction = json_data['satisfaction']
-            if not isinstance(satisfaction, bool):
-                raise ValueError(f"'satisfaction' should be a boolean, got {type(satisfaction)}")
-            
-            # Append the features: confidence, outcome, and satisfaction
-            features = []
-            features.append(float(json_data['confidence']))  # Confidence value
-            features.append(1 if json_data['outcome'] == 'issue resolved' else 0)  # Outcome as binary (resolved=1, not resolved=0)
-            features.append(int(satisfaction))  # 'satisfaction' as 1/0
-            return features
-        except KeyError as e:
-            print(f"KeyError: Missing key in the data: {e}")
-            raise
-        except Exception as e:
-            print(f"Error processing record {json_data}: {e}")
-            raise
-    
-    def bayesian_inference(self, features, labels):
-        features = np.array(features)
-        labels = np.array(labels)
-        
-        # Initialize and train the Gaussian Naive Bayes model
-        model = GaussianNB()        
-        model.fit(features, labels)        
-        predictions = model.predict(features)
-        accuracy = accuracy_score(labels, predictions)
-        scores = cross_val_score(model, features, labels, cv=5)
-        print(f"Cross-validation scores: {scores}")
-        print(f"Mean CV accuracy: {scores.mean()}")
-        
-        # Get probabilities for each class (0 and 1)
-        probs = model.predict_proba(features)  # This returns a 2D array with probabilities for both classes
-        
-        # Plot the prediction probabilities for class 1 (True satisfaction)
-        plt.figure(figsize=(10, 6))
-        plt.scatter(range(len(probs)), probs[:,1], color='blue', alpha=0.5)  # probs[:, 1] -> Probability for class 1 (True satisfaction)
-        plt.title("Prediction Probabilities (Satisfaction Prediction)")
-        plt.xlabel("Sample Index")
-        plt.ylabel("Probability of Satisfaction (True)")
-        plt.show()
-        
-        # Plot confusion matrix
-        cm = confusion_matrix(labels, predictions)
-        plt.figure(figsize=(6, 6))
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['Not Satisfied', 'Satisfied'], yticklabels=['Not Satisfied', 'Satisfied'])
-        plt.title("Confusion Matrix")
-        plt.xlabel("Predicted")
-        plt.ylabel("Actual")
-        plt.show()
-        return accuracy, predictions, probs
-    
-    # Call Bayesian Inference to predict satisfaction
-    def analyze_data(self):
-        features = []
-        labels = []
-        for record in self.data:
-            feature_vector = self.extract_features(record)
-            features.append(feature_vector)            
-            labels.append(1 if record['satisfaction'] else 0)
-        return self.bayesian_inference(features, labels)
