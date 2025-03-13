@@ -5,6 +5,7 @@ import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
+from sklearn.preprocessing import StandardScaler
 from wordcloud import WordCloud
 from collections import Counter
 from ssl_verification import *
@@ -20,9 +21,18 @@ check_nltk('corpora/stopwords')
 check_nltk('tokenizers/punkt')
 check_nltk('vader_lexicon')  # Check for VADER lexicon
 
-def make_scatter_plot(counts, sentiment_scores, main_output_path):
-    plt.figure(figsize=(12, 12))
-    plt.scatter(counts, sentiment_scores,
+def make_scatter_plot(log, counts, sentiment_scores, main_output_path):
+    scaled = (sentiment_scores - np.mean(sentiment_scores))/np.std(sentiment_scores)
+    print(sentiment_scores)
+    print(scaled)
+
+    plt.figure(figsize=(10, 10))
+    if log:
+        counts = [np.log10(1+np.log10(1+x)) for x in counts]
+        plt.xlabel('LogLog Word Frequency')
+    else:
+        plt.xlabel('Word Frequency')
+    plt.scatter(counts, scaled,
                 color=['orange' if s==0 
                 else 'green' if s>0 
                 else 'red'
@@ -31,13 +41,12 @@ def make_scatter_plot(counts, sentiment_scores, main_output_path):
 
     # Adding words as labels on the scatter plot
     for i, word in enumerate(words):
-        plt.text(counts[i], sentiment_scores[i], word,
-                fontsize=10, ha='left', va='center', rotation=45)
-    plt.xlabel('Word Frequency')
-    plt.ylabel('Sentiment Score')
+        plt.text(counts[i], scaled[i], word,
+                fontsize=7, ha='left', va='bottom', rotation=90, alpha=0.5)
+    plt.ylabel('Standardised Sentiment Score')
     plt.title('Top 50 Words Across All Members: Frequency vs. Sentiment Scores')
     plt.savefig(main_output_path, bbox_inches='tight')
-    plt.close()
+    plt.show()
 
 
 verbose = input('Do you want to see Member body? (1 = Yes, else No): ')
@@ -120,7 +129,7 @@ if plot_graph:
         wc = WordCloud(width=800,
                     height=400,
                     background_color='white').generate_from_frequencies(top_n_word_distribution)
-        output_path = f"../output/member_{rand_int}_wordcloud.png"
+        output_path = f"../output/plots/member_{rand_int}_wordcloud.png"
         plt.figure(figsize=(10, 5))
         plt.imshow(wc, interpolation='bilinear')
         plt.axis('off')  # Remove axes
@@ -146,7 +155,7 @@ bars = plt.barh(words, counts, color=['orange' if s==0
 for i, bar in enumerate(bars):
     plt.text(bar.get_width() + 1, bar.get_y() + bar.get_height() / 2, f'{sentiment_scores[i]:.2f}', 
              va='center', ha='left', fontsize=10, color='black')
-main_output_path = "../output/overall_word_distribution_with_sentiment.png"
+main_output_path = "../output/plots/overall_word_distribution_with_sentiment.png"
 plt.xlabel('Frequency')
 plt.ylabel('Words')
 plt.title('Top 50 Words Across All Members with Sentiment Scores')
@@ -155,12 +164,14 @@ plt.close()
 
 
 # scatter plot and log scale
-main_output_path = "../output/overall_word_distribution_scatter_with_sentiment.png"
-make_scatter_plot(counts=counts, 
+main_output_path = "../output/plots/overall_word_distribution_scatter_with_sentiment.png"
+make_scatter_plot(log=False,
+                  counts=counts, 
                   sentiment_scores=sentiment_scores, 
                   main_output_path=main_output_path)
 
-main_output_path_log = "../output/overall_word_distribution_scatter_with_sentiment_log.png"
-make_scatter_plot(counts=np.log10([1 + c for c in counts]), 
-                  sentiment_scores=np.log10([1 + s for s in sentiment_scores]), 
+main_output_path_log = "../output/plots/overall_word_distribution_scatter_with_sentiment_log.png"
+make_scatter_plot(log=True,
+                  counts=counts, 
+                  sentiment_scores=sentiment_scores, 
                   main_output_path=main_output_path_log)

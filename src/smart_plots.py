@@ -40,7 +40,7 @@ class SmartPlotter:
 
     def _process_data(self):
         sentiment_scores = {word: self.sia.polarity_scores(word)['compound'] for word in self.word_dictionary.keys()}
-        counts = {word: np.log10(1 + count) for word, count in self.word_dictionary.items()}
+        counts = {word: np.log10(1+count) for word, count in self.word_dictionary.items()}
 
         self.sentiment_scores = sentiment_scores  # Store raw sentiment scores
         self.counts = counts  # Store log-scaled frequencies
@@ -66,7 +66,7 @@ class SmartPlotter:
         counts = list(self.counts.values())
 
         plt.figure(figsize=(12, 8))
-        colors = ['orange' if s == 0 else 'green' if s > 0 else 'red' for s in self.sentiment_scores_scaled]
+        colors = ['orange' if s == 0 else 'green' if s > 0 else 'red' for s in self.sentiment_scores.values()]
         plt.scatter(counts, self.sentiment_scores_scaled, color=colors, edgecolors='black', s=100)
 
         for i, word in enumerate(words):
@@ -74,7 +74,7 @@ class SmartPlotter:
 
         plt.xlabel('Log Emotion Frequency')
         plt.ylabel('Standardized Sentiment Score')
-        plt.title('Top Emotions: Frequency vs. Sentiment Scores')
+        plt.title('Scatter Plot: Emotion Frequency vs Self-associated Sentiment')
         plt.grid(True, linestyle='--', alpha=0.6)
         plt.show()
     
@@ -85,9 +85,10 @@ class SmartPlotter:
         plt.figure(figsize=(12, 6))
         plt.imshow(wordcloud, interpolation='bilinear')
         plt.axis('off')
-        plt.title('Word Map of Top Emotions (Color + Opacity)')
+        plt.title("Top Emotions Mapping\n{size:frequency,\n opacity:mean_intensity}")
         plt.show()
     
+
     def improvement_pie(self, field):
         sentiment_improvement = [1 if x else 0 for x in self.df[field]]
         true_count = sentiment_improvement.count(1)
@@ -117,22 +118,43 @@ class SmartPlotter:
         plt.hist(positive_sentiments, color='green', label='Positive', alpha=0.5)
         plt.hist(neutral_sentiments, color='orange', label='Neutral', alpha=0.5)
         plt.hist(negative_sentiments, color='red', label='Negative', alpha=0.5)
+        plt.title('Sentiment Frequency Distributions across All Classes')
+        plt.xlabel('Probability')
+        plt.ylabel('Count')
         plt.legend()
         plt.show()
 
     def plot_effective_sentiment_boxplot(self):
+        # Lists for grouped distributions
+        maxed_positives = []
+        maxed_neutrals = []
+        maxed_negatives = []
+
+        # Lists for overall distributions
         positive_sentiments = []
         neutral_sentiments = []
         negative_sentiments = []
 
         for i, string in enumerate(self.df['json_sentiment_output']):
             dictionary = ast.literal_eval(string)
-            positive_sentiments.append(dictionary['positive'])
-            neutral_sentiments.append(dictionary['neutral'])
-            negative_sentiments.append(dictionary['negative'])
+            positive = dictionary['positive']
+            neutral = dictionary['neutral']
+            negative = dictionary['negative']
+
+            positive_sentiments.append(positive)
+            neutral_sentiments.append(neutral)
+            negative_sentiments.append(negative)
+
+            sentiments = [positive, neutral, negative]
+            if max(sentiments) == positive:
+                maxed_positives.append(positive)
+            elif max(sentiments) == neutral:
+                maxed_neutrals.append(neutral)
+            else:
+                maxed_negatives.append(negative)
 
         # Creating subplots
-        fig, ax = plt.subplots(1, 2, figsize=(15, 6))
+        fig, ax = plt.subplots(1, 3, figsize=(15, 6))
 
         # Plot effective sentiment
         ax[0].boxplot(self.effective_sentiments)
@@ -144,7 +166,15 @@ class SmartPlotter:
         ax[1].boxplot([positive_sentiments, neutral_sentiments, negative_sentiments], labels=['Positive', 'Neutral', 'Negative'])
         ax[1].set_ylabel("Sentiment Probability")
         ax[1].set_title("Distribution of Sentiment Probabilities")
+        ax[1].set_ylim(-0.05,1)
         ax[1].grid(axis='y', linestyle='--', alpha=0.7)
+
+        # Plot positive, neutral, negative sentiment probabilities maxes
+        ax[2].boxplot([maxed_positives, maxed_neutrals, maxed_negatives], labels=['Positive', 'Neutral', 'Negative'])
+        ax[2].set_ylabel("Sentiment Probability")
+        ax[2].set_title("Distribution of Sentiment Probabilities for Maxed Class")
+        ax[2].set_ylim(-0.05,1)
+        ax[2].grid(axis='y', linestyle='--', alpha=0.7)
 
         plt.tight_layout()
         plt.show()
