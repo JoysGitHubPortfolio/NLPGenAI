@@ -60,6 +60,17 @@ class SmartFeatures:
         elif metric == 'accuracy':
             accuracies = [(probs >= t).astype(int) == y_true for t in thresholds]
             best_threshold = thresholds[np.argmax([np.mean(acc) for acc in accuracies])]
+        elif metric == 'specificity':
+            # Specificity = TN / (TN + FP)
+            correction_distance = 10
+            tns = np.array([confusion_matrix(y_true, (probs >= t).astype(int))[0, 0] for t in thresholds])
+            fps = np.array([confusion_matrix(y_true, (probs >= t).astype(int))[0, 1] for t in thresholds])
+            
+            # Apply epsilon to avoid zero division or extreme values
+            specificity = tns / (tns + fps)  # Add epsilon to denominator
+            best_threshold = thresholds[np.argmax(specificity)]
+            if np.isinf(best_threshold):
+                best_threshold = thresholds[np.argsort(specificity)[-correction_distance]]  # second best threshold
         return best_threshold
 
     def plot_roc_auc_comparison(self):
@@ -87,51 +98,76 @@ class SmartFeatures:
         plt.show()
         return logreg_auc, nb_auc
 
-
     def plot_confusion_matrices(self):
         X, y = self.train_models()
 
+        # Find thresholds for different objectives
         best_thresh_logreg_recall = self.find_best_threshold(self.logreg_probs, y, metric='recall')
         best_thresh_logreg_acc = self.find_best_threshold(self.logreg_probs, y, metric='accuracy')
+        best_thresh_logreg_specificity = self.find_best_threshold(self.logreg_probs, y, metric='specificity')
+
         best_thresh_nb_recall = self.find_best_threshold(self.nb_probs, y, metric='recall')
         best_thresh_nb_acc = self.find_best_threshold(self.nb_probs, y, metric='accuracy')
+        best_thresh_nb_specificity = self.find_best_threshold(self.nb_probs, y, metric='specificity')
 
+        # Generate predictions
         logreg_preds_recall = (self.logreg_probs >= best_thresh_logreg_recall).astype(int)
         logreg_preds_acc = (self.logreg_probs >= best_thresh_logreg_acc).astype(int)
+        logreg_preds_specificity = (self.logreg_probs >= best_thresh_logreg_specificity).astype(int)
+        logreg_preds_default = (self.logreg_probs >= 0.5).astype(int)
+
         nb_preds_recall = (self.nb_probs >= best_thresh_nb_recall).astype(int)
         nb_preds_acc = (self.nb_probs >= best_thresh_nb_acc).astype(int)
-        
-        logreg_preds_default = (self.logreg_probs >= 0.5).astype(int)
+        nb_preds_specificity = (self.nb_probs >= best_thresh_nb_specificity).astype(int)
         nb_preds_default = (self.nb_probs >= 0.5).astype(int)
 
+        # Compute confusion matrices
         cm_logreg_recall = confusion_matrix(y, logreg_preds_recall)
         cm_logreg_acc = confusion_matrix(y, logreg_preds_acc)
+        cm_logreg_specificity = confusion_matrix(y, logreg_preds_specificity)
+        cm_logreg_default = confusion_matrix(y, logreg_preds_default)
+
         cm_nb_recall = confusion_matrix(y, nb_preds_recall)
         cm_nb_acc = confusion_matrix(y, nb_preds_acc)
-        cm_logreg_default = confusion_matrix(y, logreg_preds_default)
+        cm_nb_specificity = confusion_matrix(y, nb_preds_specificity)
         cm_nb_default = confusion_matrix(y, nb_preds_default)
 
-        fig, axes = plt.subplots(3, 2, figsize=(6, 8))
-        sns.heatmap(cm_logreg_recall, annot=True, fmt='d', cmap='Blues', ax=axes[0, 0])
-        axes[0, 0].set_title(f"LogReg Max Recall (Threshold: {best_thresh_logreg_recall:.2f})")
+        # Create a 4x2 grid for confusion matrices
+        fig, axes = plt.subplots(4, 2, figsize=(6, 10))
 
-        sns.heatmap(cm_nb_recall, annot=True, fmt='d', cmap='Blues', ax=axes[0, 1])
-        axes[0, 1].set_title(f"Naive Bayes Max Recall (Threshold: {best_thresh_nb_recall:.2f})")
+        # Define labels
+        labels = ["Unsatisfied", "Satisfied"]
 
-        sns.heatmap(cm_logreg_acc, annot=True, fmt='d', cmap='Blues', ax=axes[1, 0])
-        axes[1, 0].set_title(f"LogReg Max Accuracy (Threshold: {best_thresh_logreg_acc:.2f})")
+        # Plot heatmaps
+        sns.heatmap(cm_logreg_default, annot=True, cbar=False, fmt='d', cmap='Blues', ax=axes[3, 0], annot_kws={"size": 8})
+        axes[0, 0].set_title("LogReg Default Threshold (0.5)", fontsize=6)
 
-        sns.heatmap(cm_nb_acc, annot=True, fmt='d', cmap='Blues', ax=axes[1, 1])
-        axes[1, 1].set_title(f"Naive Bayes Max Accuracy (Threshold: {best_thresh_nb_acc:.2f})")
-        
-        sns.heatmap(cm_logreg_default, annot=True, fmt='d', cmap='Blues', ax=axes[2, 0])
-        axes[2, 0].set_title("LogReg Default Threshold (0.5)")
-        
-        sns.heatmap(cm_nb_default, annot=True, fmt='d', cmap='Blues', ax=axes[2, 1])
-        axes[2, 1].set_title("Naive Bayes Default Threshold (0.5)")
-        
+        sns.heatmap(cm_nb_default, annot=True, cbar=False, fmt='d', cmap='Blues', ax=axes[3, 1], annot_kws={"size": 8})
+        axes[0, 1].set_title("Naive Bayes Default Threshold (0.5)", fontsize=6)
+
+        sns.heatmap(cm_logreg_recall, annot=True, cbar=False, fmt='d', cmap='Blues', ax=axes[0, 0], annot_kws={"size": 8})
+        axes[1, 0].set_title(f"LogReg Max Recall (Thresh: {best_thresh_logreg_recall:.2f})", fontsize=6)
+
+        sns.heatmap(cm_nb_recall, annot=True, cbar=False, fmt='d', cmap='Blues', ax=axes[0, 1], annot_kws={"size": 8})
+        axes[1, 1].set_title(f"Naive Bayes Max Recall (Thresh: {best_thresh_nb_recall:.2f})", fontsize=6)
+
+        sns.heatmap(cm_logreg_specificity, annot=True, cbar=False, fmt='d', cmap='Blues', ax=axes[2, 0], annot_kws={"size": 8})
+        axes[2, 0].set_title(f"LogReg Max Specificity (Thresh: {best_thresh_logreg_specificity:.2f})", fontsize=6)
+
+        sns.heatmap(cm_nb_specificity, annot=True, cbar=False, fmt='d', cmap='Blues', ax=axes[2, 1], annot_kws={"size": 8})
+        axes[2, 1].set_title(f"Naive Bayes Max Specificity (Thresh: {best_thresh_nb_specificity:.2f})", fontsize=6)
+
+        sns.heatmap(cm_logreg_acc, annot=True, cbar=False, fmt='d', cmap='Blues', ax=axes[1, 0], annot_kws={"size": 8})
+        axes[3, 0].set_title(f"LogReg Max Accuracy (Thresh: {best_thresh_logreg_acc:.2f})", fontsize=6)
+
+        sns.heatmap(cm_nb_acc, annot=True, cbar=False, fmt='d', cmap='Blues', ax=axes[1, 1], annot_kws={"size": 8})
+        axes[3, 1].set_title(f"Naive Bayes Max Accuracy (Thresh: {best_thresh_nb_acc:.2f})", fontsize=6)
+
+        # Adjust labels for readability
         for ax in axes.flat:
-            ax.set_xlabel("Predicted")
-            ax.set_ylabel("Actual")
-        # plt.tight_layout()
+            ax.set_xlabel("Predicted:", fontsize=5)
+            ax.set_ylabel("Actual:", fontsize=5)
+            ax.set_xticklabels(labels, ha="right", fontsize=4)
+            ax.set_yticklabels(labels, va="center", fontsize=4)
+        plt.tight_layout()
         plt.show()
