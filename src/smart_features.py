@@ -18,6 +18,7 @@ class SmartFeatures:
         self.nb = None
         self.logreg_probs = None
         self.nb_probs = None
+        self.fig_path = '../output/analysis/'
 
     def _extract_outcome_and_satisfaction(self):
         self.satisfactions = []
@@ -87,14 +88,16 @@ class SmartFeatures:
         logreg_auc = auc(fpr_logreg, tpr_logreg)
         nb_auc = auc(fpr_nb, tpr_nb)
 
+        fig_title = 'ROC-AUC Comparison'
         plt.figure(figsize=(8, 6))
         plt.plot(fpr_logreg, tpr_logreg, label=f'LogReg (AUC={logreg_auc:.3f})', color='blue')
         plt.plot(fpr_nb, tpr_nb, label=f'Naive Bayes (AUC={nb_auc:.3f})', color='red')
         plt.plot([0, 1], [0, 1], linestyle='--', color='gray')
         plt.xlabel("False Positive Rate")
         plt.ylabel("True Positive Rate")
-        plt.title("ROC Curve Comparison")
+        plt.title(fig_title)
         plt.legend()
+        plt.savefig(f"{self.fig_path}{fig_title}.png")
         plt.show()
         return logreg_auc, nb_auc
 
@@ -142,8 +145,8 @@ class SmartFeatures:
         import seaborn as sns
 
         fig, axes = plt.subplots(4, 4, figsize=(16, 16))
-        main_title = f"Confusion Matrices & Metrics\n(Blue=LogReg, Green=GNB)\nThresholds Optimised for Each Metric"
-        plt.suptitle(main_title, fontsize=14)
+        fig_title = f"Confusion Matrices & Metrics\n(Blue=LogReg, Green=GNB)\nThresholds Optimised for Each Metric"
+        plt.suptitle(fig_title, fontsize=14)
         plt.subplots_adjust(wspace=0.4, hspace=0.6)
 
         for i, method in enumerate(methods):
@@ -191,4 +194,5 @@ class SmartFeatures:
             axes[i, 2].set_title(nb_title, fontsize=10)  # NB Confusion Matrix
 
         plt.tight_layout(rect=[0, 0, 1, 0.96])
+        plt.savefig(f"{self.fig_path}{fig_title}.png")
         plt.show()

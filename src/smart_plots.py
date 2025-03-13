@@ -186,6 +186,7 @@ class SmartPlotter:
         ax[2].grid(axis='y', linestyle='--', alpha=0.7)
 
         plt.tight_layout()
+        plt.savefig(f'{self.fig_path}Effective Sentiment Score compared to Maximised Classes.png')
         plt.show()
 
     def plot_sentiment_barchart(self):
@@ -208,10 +209,12 @@ class SmartPlotter:
         colors = ['green' if count == positive_count else 'orange' if count == neutral_count else 'red' for count in counts]
 
         # Create bar chart
+        fig_title = 'Sentiment Distribution'
         plt.figure(figsize=(8, 6))
         plt.bar(labels, counts, color=colors)
-        plt.title('Sentiment Distribution')
+        plt.title(fig_title)
         plt.ylabel('Count')
+        plt.savefig(f"{self.fig_path}{fig_title}.png")
         plt.show()
 
     def _extract_outcome_and_satisfaction(self):
@@ -242,5 +245,7 @@ class SmartPlotter:
         plt.figure(figsize=(8, 6))
         sns.heatmap(confusion_matrix, annot=True, cmap='Blues', fmt='d', cbar=False, 
                     linewidths=0.5, linecolor='black')
-        plt.title('Confusion Matrix: Outcome vs. Satisfaction')
+        fig_title = 'Confusion Matrix: Outcome vs. Satisfaction'
+        plt.title(fig_title)
+        plt.savefig(f"{self.fig_path}{fig_title}.png")
         plt.show()
