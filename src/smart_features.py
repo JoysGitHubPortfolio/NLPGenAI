@@ -140,10 +140,6 @@ class SmartFeatures:
             specificity = TN / (TN + FP) if (TN + FP) > 0 else 0
             return {'Accuracy': accuracy, 'Precision': precision, 'Recall': recall, 'Specificity': specificity}
 
-        # Create figure
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-
         fig, axes = plt.subplots(4, 4, figsize=(16, 16))
         fig_title = f"Confusion Matrices & Metrics\n(Blue=LogReg, Green=GNB)\nThresholds Optimised for Each Metric"
         plt.suptitle(fig_title, fontsize=14)
