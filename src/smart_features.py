@@ -98,129 +98,97 @@ class SmartFeatures:
         plt.show()
         return logreg_auc, nb_auc
 
-  
+
     def plot_confusion_matrices(self):
         # Train models and get probabilities, thresholds, and predictions
         X, y = self.train_models()
 
         # Find optimal thresholds for each metric for LogReg and NB
-        best_thresh_logreg_recall      = self.find_best_threshold(self.logreg_probs, y, metric='recall')
-        best_thresh_logreg_acc         = self.find_best_threshold(self.logreg_probs, y, metric='accuracy')
-        best_thresh_logreg_specificity = self.find_best_threshold(self.logreg_probs, y, metric='specificity')
+        best_thresh_logreg = {
+            'recall': self.find_best_threshold(self.logreg_probs, y, metric='recall'),
+            'accuracy': self.find_best_threshold(self.logreg_probs, y, metric='accuracy'),
+            'specificity': self.find_best_threshold(self.logreg_probs, y, metric='specificity')
+        }
+        
+        best_thresh_nb = {
+            'recall': self.find_best_threshold(self.nb_probs, y, metric='recall'),
+            'accuracy': self.find_best_threshold(self.nb_probs, y, metric='accuracy'),
+            'specificity': self.find_best_threshold(self.nb_probs, y, metric='specificity')
+        }
 
-        best_thresh_nb_recall      = self.find_best_threshold(self.nb_probs, y, metric='recall')
-        best_thresh_nb_acc         = self.find_best_threshold(self.nb_probs, y, metric='accuracy')
-        best_thresh_nb_specificity = self.find_best_threshold(self.nb_probs, y, metric='specificity')
+        # Generate predictions
+        methods = ['default', 'recall', 'specificity', 'accuracy']
+        thresholds = {method: 0.5 if method == 'default' else best_thresh_logreg[method] for method in methods}
 
-        # Generate predictions for each threshold option (default always uses 0.5)
-        logreg_preds_default      = (self.logreg_probs >= 0.5).astype(int)
-        logreg_preds_recall       = (self.logreg_probs >= best_thresh_logreg_recall).astype(int)
-        logreg_preds_specificity  = (self.logreg_probs >= best_thresh_logreg_specificity).astype(int)
-        logreg_preds_acc          = (self.logreg_probs >= best_thresh_logreg_acc).astype(int)
-
-        nb_preds_default      = (self.nb_probs >= 0.5).astype(int)
-        nb_preds_recall       = (self.nb_probs >= best_thresh_nb_recall).astype(int)
-        nb_preds_specificity  = (self.nb_probs >= best_thresh_nb_specificity).astype(int)
-        nb_preds_acc          = (self.nb_probs >= best_thresh_nb_acc).astype(int)
+        logreg_preds = {method: (self.logreg_probs >= thresholds[method]).astype(int) for method in methods}
+        nb_preds = {method: (self.nb_probs >= (0.5 if method == 'default' else best_thresh_nb[method])).astype(int) for method in methods}
 
         # Compute confusion matrices
         from sklearn.metrics import confusion_matrix
-        cm_logreg_default      = confusion_matrix(y, logreg_preds_default)
-        cm_logreg_recall       = confusion_matrix(y, logreg_preds_recall)
-        cm_logreg_specificity  = confusion_matrix(y, logreg_preds_specificity)
-        cm_logreg_acc          = confusion_matrix(y, logreg_preds_acc)
+        cm_logreg = {method: confusion_matrix(y, logreg_preds[method]) for method in methods}
+        cm_nb = {method: confusion_matrix(y, nb_preds[method]) for method in methods}
 
-        cm_nb_default      = confusion_matrix(y, nb_preds_default)
-        cm_nb_recall       = confusion_matrix(y, nb_preds_recall)
-        cm_nb_specificity  = confusion_matrix(y, nb_preds_specificity)
-        cm_nb_acc          = confusion_matrix(y, nb_preds_acc)
-
-        # Organize confusion matrices by threshold type
-        methods = ['default', 'recall', 'specificity', 'accuracy']
-        cm_logreg = {
-            'default':      cm_logreg_default,
-            'recall':       cm_logreg_recall,
-            'specificity':  cm_logreg_specificity,
-            'accuracy':     cm_logreg_acc
-        }
-        cm_nb = {
-            'default':      cm_nb_default,
-            'recall':       cm_nb_recall,
-            'specificity':  cm_nb_specificity,
-            'accuracy':     cm_nb_acc
-        }
-
-        # Helper function to compute metrics from a 2x2 confusion matrix
+        # Helper function to compute metrics
         def compute_metrics(cm):
-            # Assuming cm is [[TN, FP], [FN, TP]]
             TN, FP, FN, TP = cm.ravel()
-            accuracy    = (TP + TN) / (TP + TN + FP + FN)
-            precision   = TP / (TP + FP) if (TP + FP) > 0 else 0
-            recall      = TP / (TP + FN) if (TP + FN) > 0 else 0
+            accuracy = (TP + TN) / (TP + TN + FP + FN)
+            precision = TP / (TP + FP) if (TP + FP) > 0 else 0
+            recall = TP / (TP + FN) if (TP + FN) > 0 else 0
             specificity = TN / (TN + FP) if (TN + FP) > 0 else 0
-            return {'Accuracy': accuracy, 
-                    'Precision': precision, 
-                    'Recall': recall, 
-                    'Specificity': specificity}
+            return {'Accuracy': accuracy, 'Precision': precision, 'Recall': recall, 'Specificity': specificity}
 
-        # Create a figure with 4 rows and 4 columns:
-        # Columns 0 and 1 will be for LogReg (confusion matrix and bar chart)
-        # Columns 2 and 3 will be for Naive Bayes
+        # Create figure
         import matplotlib.pyplot as plt
         import seaborn as sns
 
         fig, axes = plt.subplots(4, 4, figsize=(16, 16))
+        main_title = f"Confusion Matrices & Metrics\n(Blue=LogReg, Green=GNB)\nThresholds Optimised for Each Metric"
+        plt.suptitle(main_title, fontsize=14)
         plt.subplots_adjust(wspace=0.4, hspace=0.6)
 
         for i, method in enumerate(methods):
-            # ----------------------
-            # LogReg Plots (left two columns)
-            # ----------------------
-            # Confusion matrix (column 0)
-            sns.heatmap(cm_logreg[method], annot=True, cbar=False, fmt='d',
-                        cmap='Blues', ax=axes[i, 0], annot_kws={"size": 8})
-            if method == 'default':
-                thresh = 0.5
-            else:
-                thresh = {
-                    'recall':       best_thresh_logreg_recall,
-                    'specificity':  best_thresh_logreg_specificity,
-                    'accuracy':     best_thresh_logreg_acc
-                }[method]
-            axes[i, 0].set_title(f"LogReg {method.capitalize()} (Thresh: {thresh:.2f})", fontsize=10)
+            # LogReg Confusion Matrix (Blues)
+            sns.heatmap(cm_logreg[method], annot=True, cbar=False, fmt='d', cmap='Blues', ax=axes[i, 0], annot_kws={"size": 8})
             axes[i, 0].set_xlabel("Predicted", fontsize=8)
             axes[i, 0].set_ylabel("Actual", fontsize=8)
 
-            # Metrics bar chart (column 1)
+            # LogReg Metrics Bar Chart
             logreg_metrics = compute_metrics(cm_logreg[method])
             axes[i, 1].bar(logreg_metrics.keys(), logreg_metrics.values(), color='skyblue')
             axes[i, 1].set_ylim(0, 1)
-            axes[i, 1].set_title("LogReg Metrics", fontsize=10)
             axes[i, 1].tick_params(axis='x', labelrotation=45, labelsize=8)
 
-            # ----------------------
-            # Naive Bayes Plots (right two columns)
-            # ----------------------
-            # Confusion matrix (column 2)
-            sns.heatmap(cm_nb[method], annot=True, cbar=False, fmt='d',
-                        cmap='Blues', ax=axes[i, 2], annot_kws={"size": 8})
-            if method == 'default':
-                thresh = 0.5
-            else:
-                thresh = {
-                    'recall':       best_thresh_nb_recall,
-                    'specificity':  best_thresh_nb_specificity,
-                    'accuracy':     best_thresh_nb_acc
-                }[method]
-            axes[i, 2].set_title(f"NB {method.capitalize()} (Thresh: {thresh:.2f})", fontsize=10)
+            # Naive Bayes Confusion Matrix (Greens)
+            sns.heatmap(cm_nb[method], annot=True, cbar=False, fmt='d', cmap='Greens', ax=axes[i, 2], annot_kws={"size": 8})
             axes[i, 2].set_xlabel("Predicted", fontsize=8)
             axes[i, 2].set_ylabel("Actual", fontsize=8)
 
-            # Metrics bar chart (column 3)
+            # Naive Bayes Metrics Bar Chart
             nb_metrics = compute_metrics(cm_nb[method])
             axes[i, 3].bar(nb_metrics.keys(), nb_metrics.values(), color='lightgreen')
             axes[i, 3].set_ylim(0, 1)
-            axes[i, 3].set_title("NB Metrics", fontsize=10)
             axes[i, 3].tick_params(axis='x', labelrotation=45, labelsize=8)
-        plt.tight_layout()
+
+            # Update titles
+            logreg_thresh = 0.5 if method == 'default' else {
+                'recall': best_thresh_logreg['recall'],
+                'specificity': best_thresh_logreg['specificity'],
+                'accuracy': best_thresh_logreg['accuracy']
+            }[method]
+
+            nb_thresh = 0.5 if method == 'default' else {
+                'recall': best_thresh_nb['recall'],
+                'specificity': best_thresh_nb['specificity'],
+                'accuracy': best_thresh_nb['accuracy']
+            }[method]
+
+            # Titles
+            logreg_title = f"{method.capitalize()}: threshold = {logreg_thresh:.2f}"
+            nb_title = f"{method.capitalize()}: threshold = {nb_thresh:.2f}"
+
+            # Set titles
+            axes[i, 0].set_title(logreg_title, fontsize=10)  # LogReg Confusion Matrix
+            axes[i, 2].set_title(nb_title, fontsize=10)  # NB Confusion Matrix
+
+        plt.tight_layout(rect=[0, 0, 1, 0.96])
         plt.show()

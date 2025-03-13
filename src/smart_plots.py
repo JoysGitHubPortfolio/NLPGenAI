@@ -14,6 +14,7 @@ class SmartPlotter:
         self.word_dictionary = self._extract_word_frequencies()
         self._process_data()
         self._extract_outcome_and_satisfaction()
+        self.fig_path = '../output/analysis/'
 
     def _extract_word_frequencies(self):
         word_dict = {}
@@ -72,20 +73,24 @@ class SmartPlotter:
         for i, word in enumerate(words):
             plt.text(counts[i], self.sentiment_scores_scaled[i], word, fontsize=10, ha='right', va='bottom', rotation=30)
 
+        fig_title = "Scatter Plot: Emotion Frequency vs Self-associated Sentiment"
         plt.xlabel('Log Emotion Frequency')
         plt.ylabel('Standardized Sentiment Score')
-        plt.title('Scatter Plot: Emotion Frequency vs Self-associated Sentiment')
+        plt.title(fig_title)
         plt.grid(True, linestyle='--', alpha=0.6)
+        plt.savefig(f"{self.fig_path}{fig_title}.png")
         plt.show()
     
     def make_word_map(self):
         wordcloud = WordCloud(width=800, height=400, background_color='white', color_func=self._color_function) \
             .generate_from_frequencies(self.word_dictionary)
 
+        fig_title = "Top Emotions Mapping\nOpacity Mapped to Emotion Intensity"
         plt.figure(figsize=(12, 6))
         plt.imshow(wordcloud, interpolation='bilinear')
         plt.axis('off')
-        plt.title("Top Emotions Mapping\n{size:frequency,\n opacity:mean_intensity}")
+        plt.title(fig_title)
+        plt.savefig(f"{self.fig_path}{fig_title}.png")
         plt.show()
     
 
@@ -94,14 +99,16 @@ class SmartPlotter:
         true_count = sentiment_improvement.count(1)
         false_count = sentiment_improvement.count(0)
 
-        labels = ['Improvement', 'No Improvement']
+        labels = ['Required', 'Not Required']
         sizes = [true_count, false_count]
         colors = ['red', 'green']
         explode = (0.1, 0)  # Slightly explode 'Improvement' for emphasis
 
+        fig_title = f"Distribution of {field}"
         plt.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
-        plt.title(f'{field} Distribution')
+        plt.title(fig_title)
         plt.axis('equal')
+        plt.savefig(f"{self.fig_path}{fig_title}.png")
         plt.show()
 
     def plot_sentiment_histogram(self):
@@ -115,13 +122,15 @@ class SmartPlotter:
             neutral_sentiments.append(dictionary['neutral'])
             negative_sentiments.append(dictionary['negative'])
 
+        fig_title = 'Sentiment Frequency Distributions across All Classes'
         plt.hist(positive_sentiments, color='green', label='Positive', alpha=0.5)
         plt.hist(neutral_sentiments, color='orange', label='Neutral', alpha=0.5)
         plt.hist(negative_sentiments, color='red', label='Negative', alpha=0.5)
-        plt.title('Sentiment Frequency Distributions across All Classes')
+        plt.title(fig_title)
         plt.xlabel('Probability')
         plt.ylabel('Count')
         plt.legend()
+        plt.savefig(f"{self.fig_path}{fig_title}.png")
         plt.show()
 
     def plot_effective_sentiment_boxplot(self):
@@ -201,8 +210,8 @@ class SmartPlotter:
         # Create bar chart
         plt.figure(figsize=(8, 6))
         plt.bar(labels, counts, color=colors)
-        plt.title('Sentiment Distribution (RAG Color Scheme)')
-        plt.ylabel('Sentiment Count')
+        plt.title('Sentiment Distribution')
+        plt.ylabel('Count')
         plt.show()
 
     def _extract_outcome_and_satisfaction(self):
